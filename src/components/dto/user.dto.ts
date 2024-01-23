@@ -4,7 +4,7 @@ export type userGeneral = {
   avatar: string | undefined;
   ROLE: string;
 };
-export interface UserFullDetailAndOrder {
+export interface UserFullDetailAndDeliveringOrder {
   user_id: number;
   first_name: string;
   last_name: string;

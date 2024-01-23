@@ -2,23 +2,43 @@ import { getServerSession } from "next-auth";
 import React from "react";
 import { options } from "../api/auth/[...nextauth]/options";
 import fetch from "@/utils/fetch";
-import { Order, UserFullDetailAndOrder } from "@/components/dto/user.dto";
+import {
+  Order,
+  UserFullDetailAndDeliveringOrder,
+} from "@/components/dto/user.dto";
 import formatTime from "@/utils/formatTime";
 import truncateText from "@/utils/truncateText";
 import formatPrice from "@/utils/formatPrice";
 import Link from "next/link";
 import Pagination from "@/components/layout/pagination/pagination";
 
-export default async function page() {
+export default async function page({
+  searchParams,
+}: {
+  searchParams: {
+    page: string | undefined;
+  };
+}) {
   const session = await getServerSession(options);
+  let { page } = searchParams;
+  if (isNaN(Number(page)) || page == undefined) page = "1";
   let res = await fetch("/customer/customerDetail", {
     headers: { Authorization: "Bearer " + session?.user?.access_token },
   });
-  let data: UserFullDetailAndOrder | undefined = undefined;
-  let deliveringOrderList: Order[] = [];
+  let data: UserFullDetailAndDeliveringOrder | undefined = undefined;
   if (res.ok) {
     data = await res.json();
-    deliveringOrderList = data!.orders.filter((item) => item.status.id == 2);
+  }
+  let orderRes = await fetch("/customer/orderlist?page=" + page, {
+    headers: { Authorization: "Bearer " + session?.user?.access_token },
+  });
+  console.log("/customer/orderlist&page=" + page);
+  let orderList: Order[] = [];
+  let totalPage = 0;
+  if (orderRes.ok) {
+    let result: { totalPage: number; value: Order[] } = await orderRes.json();
+    totalPage = result.totalPage;
+    orderList = result.value;
   }
   return (
     <div className="bg-gray-100">
@@ -135,30 +155,31 @@ export default async function page() {
                   </span>
                 </div>
                 <ul className="list-inside space-y-2">
-                  {deliveringOrderList.map((item, index) => {
-                    return (
-                      <li key={item.id}>
-                        <Link
-                          href={"/customer/order?order_id=" + item.id}
-                          className="text-teal-600"
-                        >
-                          {truncateText(item.name, 30)}
-                        </Link>
-                        <div className="text-blue-500 text-sm">
-                          Trạng thái đơn hàng:{" "}
-                          <span className="font-medium text-black">
-                            Đang giao
-                          </span>
-                        </div>
-                        <div className="text-red-600 text-md">
-                          {formatPrice(item.price)} đ
-                        </div>
-                        <div className="text-gray-500 text-xs">
-                          Thời gian đặt: {formatTime(item.createAt)}
-                        </div>
-                      </li>
-                    );
-                  })}
+                  {data?.orders.length != 0 &&
+                    data?.orders.map((item, index) => {
+                      return (
+                        <li key={item.id}>
+                          <Link
+                            href={"/customer/order?order_id=" + item.id}
+                            className="text-teal-600"
+                          >
+                            {truncateText(item.name, 30)}
+                          </Link>
+                          <div className="text-blue-500 text-sm">
+                            Trạng thái đơn hàng:{" "}
+                            <span className="font-medium text-black">
+                              Đang giao
+                            </span>
+                          </div>
+                          <div className="text-red-600 text-md">
+                            {formatPrice(item.price)} đ
+                          </div>
+                          <div className="text-gray-500 text-xs">
+                            Thời gian đặt: {formatTime(item.createAt)}
+                          </div>
+                        </li>
+                      );
+                    })}
                 </ul>
               </div>
               <div>
@@ -182,35 +203,36 @@ export default async function page() {
                   <span className="tracking-wide">Lịch sử đơn hàng :</span>
                 </div>
                 <ul className="list-inside space-y-2">
-                  {data?.orders.map((item, index) => {
-                    return (
-                      <li key={item.id}>
-                        <Link
-                          href={"/customer/order?order_id=" + item.id}
-                          className="text-teal-600"
-                        >
-                          {truncateText(item.name, 30)}
-                        </Link>
+                  {orderList.length != 0 &&
+                    orderList.map((item, index) => {
+                      return (
+                        <li key={item.id}>
+                          <Link
+                            href={"/customer/order?order_id=" + item.id}
+                            className="text-teal-600"
+                          >
+                            {truncateText(item.name, 30)}
+                          </Link>
 
-                        <div className="text-blue-500 text-sm">
-                          Trạng thái đơn hàng:{" "}
-                          <span className="font-medium text-black">
-                            {item.status.status_name}
-                          </span>
-                        </div>
-                        <div className="text-red-600 text-md">
-                          {formatPrice(item.price)} đ
-                        </div>
-                        <div className="text-gray-500 text-xs">
-                          Thời gian đặt: {formatTime(item.createAt)}
-                        </div>
-                      </li>
-                    );
-                  })}
+                          <div className="text-blue-500 text-sm">
+                            Trạng thái đơn hàng:{" "}
+                            <span className="font-medium text-black">
+                              {item.status.status_name}
+                            </span>
+                          </div>
+                          <div className="text-red-600 text-md">
+                            {formatPrice(item.price)} đ
+                          </div>
+                          <div className="text-gray-500 text-xs">
+                            Thời gian đặt: {formatTime(item.createAt)}
+                          </div>
+                        </li>
+                      );
+                    })}
                 </ul>
                 <Pagination
                   rootDirection="/customer"
-                  totalPage={3}
+                  totalPage={totalPage}
                   scrollTop={false}
                 />
               </div>

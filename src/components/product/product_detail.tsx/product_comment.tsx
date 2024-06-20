@@ -2,6 +2,7 @@
 import { useState } from "react";
 import ProductImageCommentImage from "./product_comment_image";
 import formatTime from "@/utils/formatTime";
+import { getWebViewLinkFromWebContentLink } from "@/utils/handleDriveImage";
 
 export default function ProductComment({
   commentsProps,
@@ -150,8 +151,7 @@ export default function ProductComment({
                     {" "}
                     <img
                       className="mr-2 w-8 h-8 rounded-full"
-                      src={item.user.avartar}
-                      alt="Michael Gough"
+                      src={getWebViewLinkFromWebContentLink(item.user.avartar)}
                     />
                     <div className="">
                       <footer className="flex justify-between items-center mb-2 flex-wrap">

@@ -1,5 +1,6 @@
 "use client";
 
+import { getWebViewLinkFromWebContentLink } from "@/utils/handleDriveImage";
 import { Carousel } from "@material-tailwind/react";
 
 export default function PromotionBannerCarousel({
@@ -33,7 +34,7 @@ export default function PromotionBannerCarousel({
           {bannerList.map((item) => {
             return (
               <img
-                src={item.image}
+                src={getWebViewLinkFromWebContentLink(item.image)}
                 alt="image 1"
                 className="  ease-in-out h-96 mx-auto absolute block w-full max-h-full"
                 key={item.id}

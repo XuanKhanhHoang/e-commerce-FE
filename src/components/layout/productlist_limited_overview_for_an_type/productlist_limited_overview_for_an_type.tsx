@@ -6,15 +6,24 @@ import fetch from "@/utils/fetch";
 export default async function ProductListLimitedOverviewForAnType({
   typeName,
   href,
+  decoratorWidth = 30,
+  category_id = 1,
+  product_per_page = 6,
 }: {
   typeName: string;
   href: string;
+  decoratorWidth?: number;
+  category_id?: number;
+  product_per_page?: number;
 }) {
   let productlist: productList = [];
   try {
-    let res: Response = await fetch("/product/productlist?page=" + 1, {
-      cache: "no-store",
-    });
+    let res: Response = await fetch(
+      `/product/productlist?category_id=${category_id}&page=1&product_per_page=${product_per_page}`,
+      {
+        cache: "default",
+      }
+    );
 
     if (res.ok) {
       let data: getProductListResponse = await res.json();
@@ -30,7 +39,7 @@ export default async function ProductListLimitedOverviewForAnType({
             className=" absolute z-10 w-0 h-0 top-0 left-[-40px]"
             style={{
               height: 0,
-              borderLeft: "30px solid #009981",
+              borderLeft: decoratorWidth + "px solid #009981",
               borderRight: "40px solid #00483d",
               borderBottom: "32px solid #009981",
             }}

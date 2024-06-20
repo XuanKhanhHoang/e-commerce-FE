@@ -8,7 +8,7 @@ export default function RenderProductList({
   return (
     <div className="bg-white w-full mt-2">
       <ul className="w-full flex flex-row flex-wrap">
-        {productlist.length != 0 ? (
+        {productlist.length != 0 && Array.isArray(productlist) ? (
           productlist.map((item, index) => {
             return (
               <li

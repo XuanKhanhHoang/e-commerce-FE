@@ -1,5 +1,6 @@
 "use client";
 
+import { getWebViewLinkFromWebContentLink } from "@/utils/handleDriveImage";
 import { Carousel } from "@material-tailwind/react";
 import { useEffect, useRef, useState } from "react";
 interface CarouselProps {
@@ -61,7 +62,7 @@ export default function ProductImageCarousel({ image }: { image: string[] }) {
         image.map((item, index) => {
           return (
             <img
-              src={item}
+              src={getWebViewLinkFromWebContentLink(item.toString())}
               alt="image 1"
               className=" object-cover  ease-in-out h-96 mx-auto"
               key={index}

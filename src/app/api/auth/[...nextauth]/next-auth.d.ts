@@ -10,8 +10,7 @@ declare module "next-auth" {
     user?: {
       access_token: string;
       value: userGeneral;
-    };
-    // & DefaultSession["user"];
+    } & DefaultSession["user"];
   }
   interface User {
     access_token: string;

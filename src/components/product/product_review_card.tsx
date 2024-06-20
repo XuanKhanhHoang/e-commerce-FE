@@ -2,6 +2,7 @@ import truncateText from "@/utils/truncateText";
 import Link from "next/link";
 import RatingComponents from "../layout/rating/rating";
 import formatPrice from "@/utils/formatPrice";
+import { getWebViewLinkFromWebContentLink } from "@/utils/handleDriveImage";
 
 export default function ProductReviewCard({
   productInfo,
@@ -20,7 +21,7 @@ export default function ProductReviewCard({
       )}
       <div className="w-[200px] h-[150px] md:h-[180px] md:w-[225px] flex items-center mx-auto max-w-full">
         <img
-          src={productInfo.logo}
+          src={getWebViewLinkFromWebContentLink(productInfo.logo, 1500, 1500)}
           className="rounded-t-lg w-fit h-full mx-auto "
           alt=" "
         />

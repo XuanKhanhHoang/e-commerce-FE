@@ -13,8 +13,8 @@ type product_detail = {
   comment: comment[];
 };
 type product_options = {
-  originalPrice: number;
-  price: number;
+  original_price: number;
+  selling_price: number;
   name: string;
   id: number;
   amount: number;

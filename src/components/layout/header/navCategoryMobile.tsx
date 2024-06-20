@@ -1,3 +1,4 @@
+import { getWebViewLinkFromWebContentLink } from "@/utils/handleDriveImage";
 import { Session } from "next-auth";
 import { signOut } from "next-auth/react";
 import Image from "next/image";
@@ -24,8 +25,12 @@ export default function NavCategoryMobile({
               className="p-2 me-2 flex items-center flex-row ms-3"
               href={"/user/" + session?.user?.value.user_id}
             >
-              <Image
-                src={session?.user?.value.avatar || "/img.png"}
+              <img
+                src={
+                  getWebViewLinkFromWebContentLink(
+                    session?.user?.value.avatar
+                  ) || "/img.png"
+                }
                 width={30}
                 height={30}
                 className="rounded-full me-1"
@@ -45,7 +50,7 @@ export default function NavCategoryMobile({
             </button>
           </div>
         ) : (
-          <Link href={"/login"} className="flex flex-row">
+          <Link href={"/auth/login"} className="flex flex-row">
             <button className="bg-white p-2 px-3 rounded-lg ms-3 me-2">
               <i className="fa-solid fa-user fs-2 text-[#3d71e7]"></i>
             </button>
@@ -83,7 +88,15 @@ export default function NavCategoryMobile({
                   href={`/productlist?category_id=${item.id}`}
                 >
                   <div className="me-3">
-                    <i className={`${item.icon} text-2xl`}></i>
+                    <img
+                      className="w-6 h-6 mx-auto"
+                      src={getWebViewLinkFromWebContentLink(
+                        item.icon.toString(),
+                        30,
+                        40
+                      )}
+                      alt=""
+                    />
                   </div>
                   {item.name}
                   <div className="ms-auto">

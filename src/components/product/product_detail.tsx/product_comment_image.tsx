@@ -1,5 +1,6 @@
 "use client";
 
+import { getWebViewLinkFromWebContentLink } from "@/utils/handleDriveImage";
 import { useState } from "react";
 
 export default function ProductImageCommentCarousel({
@@ -16,7 +17,7 @@ export default function ProductImageCommentCarousel({
             return (
               <img
                 key={index}
-                src={item.image}
+                src={getWebViewLinkFromWebContentLink(item.image)}
                 onClick={() =>
                   setPriviewImage(
                     previewImage != -1
@@ -35,7 +36,9 @@ export default function ProductImageCommentCarousel({
       {previewImage != -1 && (
         <div className="mt-3 max-w-full">
           <img
-            src={imageArray[previewImage].image}
+            src={getWebViewLinkFromWebContentLink(
+              imageArray[previewImage].image
+            )}
             alt=""
             className="max-w-full max-h-80 "
           />

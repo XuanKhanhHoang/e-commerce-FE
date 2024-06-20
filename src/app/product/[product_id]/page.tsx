@@ -15,7 +15,6 @@ export default async function page({
   let res: Response = await fetch(
     "/product/productdetail?product_id=" + product_id
   );
-
   let productDetail: product_detail | undefined = res.ok
     ? await res.json()
     : undefined;

@@ -1,41 +1,38 @@
+import { addProductToCart, cartItem } from "@/redux/feature/cart";
+import CustomFetch from "@/utils/fetch";
 import formatPrice from "@/utils/formatPrice";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
+import { useDispatch } from "react-redux";
 import { toast } from "react-toastify";
-
+type orderState = {
+  amount: string;
+  option: product_options;
+  price: number;
+};
 export default function ProductOptions({
-  productId,
+  productName,
   productOptions,
 }: {
-  productId: number;
+  productName: string;
   productOptions: product_options[];
 }) {
   const { data: session } = useSession();
   const router = useRouter();
-  const handleAddToCart = () => {
-    if (!session) {
-      toast.warning("Bạn phải đăng nhập để thêm vào giỏ hàng", {
-        autoClose: 700,
-      });
-      router.push("/login");
-    }
-  };
-  const [order, setOrder] = useState<{
-    amount: string;
-    option: product_options;
-    price: number;
-  }>({
+  const dispatch = useDispatch();
+
+  const [order, setOrder] = useState<orderState>({
     amount: "1",
     option: productOptions[0],
-    price: productOptions[0].price,
+    price: productOptions[0].selling_price,
   });
   const decrement = (e: any) => {
     let value = Number(order.amount);
     if (value - 1 >= 1 && !Number.isNaN(value)) {
       setOrder({
         amount: (value - 1).toString(),
-        price: (value - 1) * order.option.price,
+        price: (value - 1) * order.option.selling_price,
         option: order.option,
       });
     }
@@ -45,7 +42,7 @@ export default function ProductOptions({
     if (value + 1 <= order.option.amount && !Number.isNaN(value)) {
       setOrder({
         amount: (value + 1).toString(),
-        price: (value + 1) * order.option.price,
+        price: (value + 1) * order.option.selling_price,
         option: order.option,
       });
     }
@@ -56,7 +53,7 @@ export default function ProductOptions({
     if (val <= order.option.amount && val >= 1 && !Number.isNaN(val)) {
       setOrder({
         amount: e.target.value.trim(),
-        price: val * order.option.price,
+        price: val * order.option.selling_price,
         option: order.option,
       });
     } else if (e.target.value == "") {
@@ -66,15 +63,75 @@ export default function ProductOptions({
       });
     }
   };
+  const checkIsAuth = () => {
+    if (!session) {
+      toast.warning("Bạn phải đăng nhập để thêm vào giỏ hàng", {
+        autoClose: 700,
+      });
+      return router.push("/auth/login");
+    }
+  };
+  const handleAddToCart = async () => {
+    checkIsAuth();
+    if (isNaN(Number(order.amount))) {
+      return toast.error("Vui lòng chọn số lượng hàng hợp lệ !", {
+        autoClose: 600,
+      });
+    }
+    let res = await CustomFetch("/cart/addproduct", {
+      headers: {
+        Authorization: "Bearer " + session?.user?.access_token,
+        "Content-Type": "application/json",
+      },
+      method: "POST",
+      body: JSON.stringify({ option_id: order.option.id }),
+    });
+    if (res.status == 409) {
+      return toast.warning("Sản phẩm này đã có trong giỏ hàng !", {
+        autoClose: 600,
+      });
+    } else if (!res.ok) {
+      return toast.error("Có lỗi xảy ra !", {
+        autoClose: 600,
+      });
+    }
+    let result: { order_id: number } = await res.json();
+    let data: cartItem = {
+      amount: Number(order.amount),
+      id: result.order_id,
+      option: {
+        amount: order.option.amount,
+        discount: order.option.discount,
+        image: order.option.image,
+        id: order.option.id,
+        name: order.option.name,
+        original_price: order.option.original_price,
+        price_sell: order.option.selling_price,
+        products: {
+          name: productName,
+        },
+      },
+    };
+    dispatch(addProductToCart(data));
+    toast.success("Thêm sản phẩm vào giỏ hàng thành công", {
+      autoClose: 600,
+    });
+  };
+  const handleBuyNow = () => {
+    checkIsAuth();
+    router.push(
+      `/customer/create_order?product_option_id=${order.option.id}&amount=${order.amount}`
+    );
+  };
   return (
     <>
       <div className="mb-3">
         <span className="text-2xl text-red-500 font-semibold me-2">
-          {formatPrice(order.option.price)} đ
+          {formatPrice(order.option.selling_price)} đ
         </span>
         {order.option.discount != 0 && (
           <span className="line-through text-sm opacity-70">
-            {formatPrice(order.option.originalPrice)} đ
+            {formatPrice(order.option.original_price)} đ
           </span>
         )}
       </div>
@@ -101,7 +158,7 @@ export default function ProductOptions({
                         setOrder({
                           amount: order.amount,
                           option: productOptions[index],
-                          price: productOptions[index].price,
+                          price: productOptions[index].selling_price,
                         })
                       }
                       className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300  focus:outline-none focus:ring-0 focus:border-gray-900 shadow-none"
@@ -156,6 +213,7 @@ export default function ProductOptions({
       <div className="flex justify-evenly mt-4">
         <button
           type="button"
+          onClick={handleBuyNow}
           className="text-white bg-gradient-to-r from-red-400 via-red-500 to-red-600 hover:bg-gradient-to-br focus:ring-4 focus:outline-none focus:ring-red-300 dark:focus:ring-red-800 font-medium rounded-lg text-sm px-5 py-3 text-center me-2 mb-2"
         >
           Mua ngay

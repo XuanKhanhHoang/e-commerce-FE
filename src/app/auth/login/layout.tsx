@@ -1,7 +1,7 @@
 import { getServerSession } from "next-auth";
-import { options } from "../api/auth/[...nextauth]/options";
+import { options } from "../../api/auth/[...nextauth]/options";
 import { redirect } from "next/navigation";
-import { customerRole } from "../api/auth/[...nextauth]/roles.enum";
+import { customerRole } from "../../api/auth/[...nextauth]/roles.enum";
 
 export default async function Layout({
   children,

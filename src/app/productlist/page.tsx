@@ -2,23 +2,24 @@ import BreadcrumbComponent from "@/components/layout/breadcrumb/breadcrumb";
 import FilterComponents from "@/components/layout/filter/filter";
 import Pagination from "@/components/layout/pagination/pagination";
 import RenderProductListWithFilter from "@/components/product/productlist/productListWithFilter";
-import fetch from "@/utils/fetch";
+import CustomFetch from "@/utils/fetch";
 import React from "react";
 
+type productListSearchParams = {
+  category_id: string | undefined;
+  page: string | undefined;
+  keyword: string | undefined;
+  brand_id: string | undefined;
+  rating: string | string[] | undefined;
+  min_price: string | undefined;
+  max_price: string | undefined;
+  order_type: "ASC" | "DESC";
+  order_col: "update_at" | "price_sell";
+};
 export default async function Category({
   searchParams,
 }: {
-  searchParams: {
-    category_id: string | undefined;
-    page: string | undefined;
-    keyword: string | undefined;
-    brand_id: string | undefined;
-    rating: string | string[] | undefined;
-    min_price: string | undefined;
-    max_price: string | undefined;
-    order_type: "ASC" | "DESC";
-    order_col: "update_at" | "price_sell";
-  };
+  searchParams: productListSearchParams;
 }) {
   let categoryName = "Không tìm thấy lọai hàng";
   let productList: productList = [];
@@ -60,47 +61,36 @@ export default async function Category({
   } //pass
   else order_type = "DESC";
   try {
-    let resBrandList: Response = await fetch("/product/brandlist", {
-      cache: "no-store",
-    });
-    if (resBrandList.ok) {
-      let data: brandList = await resBrandList.json();
-      brandList = data;
-    }
-    let resCategoryList: Response = await fetch("/product/categorylist", {
-      cache: "no-store",
-    });
-    if (resCategoryList.ok) {
-      let data: categoryList = await resCategoryList.json();
-      categoryList = data;
-    }
-    let resProductList: Response = await fetch(
-      `/product/productlist?page=${page}${
-        category_id ? "&category_id=" + category_id : ""
-      }${brand_id ? "&brand_id=" + brand_id : ""}${
-        searchParams.keyword ? "&keyword=" + searchParams.keyword : ""
-      }${
-        rating != undefined && rating?.length != 0
-          ? rating?.map((item) => "&rating=" + item).join("")
-          : ""
-      }${min_price != undefined ? `&min_price=${min_price}` : ""}${
-        max_price != undefined ? `&max_price=${max_price}` : ""
-      }${`&order_type=${order_type}`}${`&order_col=${order_col}`}`,
-      { cache: "no-store" }
-    );
-    console.log(
-      `/product/productlist?page=${page}${
-        category_id ? "&category_id=" + category_id : ""
-      }${brand_id ? "&brand_id=" + brand_id : ""}${
-        searchParams.keyword ? "&keyword=" + searchParams.keyword : ""
-      }${
-        rating != undefined && rating?.length != 0
-          ? rating?.map((item) => "&rating=" + item).join("")
-          : ""
-      }${min_price != undefined ? `&min_price=${min_price}` : ""}${
-        max_price != undefined ? `&max_price=${max_price}` : ""
-      }${`&order_type=${order_type}`}${`&order_col=${order_col}`}`
-    );
+    let [resBrandList, resCategoryList, resProductList] = await Promise.all([
+      CustomFetch("/product/brandlist", {
+        cache: undefined,
+        next: { revalidate: 3000 },
+      }),
+      CustomFetch("/product/brandlist", {
+        cache: undefined,
+        next: { revalidate: 3000 },
+      }),
+      CustomFetch(
+        `/product/productlist?page=${page}${
+          category_id ? "&category_id=" + category_id : ""
+        }${brand_id ? "&brand_id=" + brand_id : ""}${
+          searchParams.keyword ? "&keyword=" + searchParams.keyword : ""
+        }${
+          rating != undefined && rating?.length != 0
+            ? rating?.map((item) => "&rating=" + item).join("")
+            : ""
+        }${min_price != undefined ? `&min_price=${min_price}` : ""}${
+          max_price != undefined ? `&max_price=${max_price}` : ""
+        }${`&order_type=${order_type}`}${`&order_col=${order_col}`}`,
+        {
+          next: {
+            revalidate: 200,
+          },
+        }
+      ),
+    ]);
+    if (resBrandList.ok) brandList = await resBrandList.json();
+    if (resCategoryList.ok) categoryList = await resCategoryList.json();
     if (resProductList.ok) {
       let data: getProductListResponse = await resProductList.json();
       isProductListError = false;
@@ -139,23 +129,24 @@ export default async function Category({
       </div>
       <div className=" flex justify-center">
         <div className="w-fit ">
-          {" "}
-          <Pagination
-            itemsPerPage={14}
-            totalPage={totalPage}
-            rootDirection={`/productlist?${
-              category_id ? "&category_id=" + category_id : ""
-            }${brand_id ? "&brand_id=" + brand_id : ""}${
-              searchParams.keyword ? "&keyword=" + searchParams.keyword : ""
-            }${
-              rating != undefined && rating?.length != 0
-                ? rating?.map((item) => "&rating=" + item).join("")
-                : ""
-            }${min_price != undefined ? `&min_price=${min_price}` : ""}${
-              max_price != undefined ? `&max_price=${max_price}` : ""
-            }${`&order_type=${order_type}`}${`&order_col=${order_col}`}`}
-            forcePage={Number(page) || 1}
-          />
+          {totalPage > 0 && (
+            <Pagination
+              itemsPerPage={14}
+              totalPage={totalPage}
+              rootDirection={`/productlist?${
+                category_id ? "&category_id=" + category_id : ""
+              }${brand_id ? "&brand_id=" + brand_id : ""}${
+                searchParams.keyword ? "&keyword=" + searchParams.keyword : ""
+              }${
+                rating != undefined && rating?.length != 0
+                  ? rating?.map((item) => "&rating=" + item).join("")
+                  : ""
+              }${min_price != undefined ? `&min_price=${min_price}` : ""}${
+                max_price != undefined ? `&max_price=${max_price}` : ""
+              }${`&order_type=${order_type}`}${`&order_col=${order_col}`}`}
+              forcePage={Number(page) || 1}
+            />
+          )}
         </div>
       </div>
     </main>

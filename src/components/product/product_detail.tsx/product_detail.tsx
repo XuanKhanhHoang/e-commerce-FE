@@ -1,5 +1,6 @@
 "use client";
 
+import RatingComponents from "@/components/layout/rating/rating";
 import ProductComment from "./product_comment";
 import ProductDescription from "./product_description";
 import ProductImageCarousel from "./product_image_carousel";
@@ -42,9 +43,10 @@ export default function ProductDetail({
                 <h4 className="title text-gray-900 font-bold">{name}</h4>
                 <div className="flex flex-row my-3">
                   <div className="text-yellow-500 mb-1 me-2">
-                    {[...Array(Math.floor(rating))].map((item, index) => {
-                      return <i className="fa fa-star" key={index} />;
-                    })}
+                    <RatingComponents
+                      value={rating}
+                      classIcon={"h-3 w-3 md:h-5 w-5"}
+                    />
 
                     <span className="ms-1">{rating}</span>
                   </div>
@@ -55,7 +57,7 @@ export default function ProductDetail({
                   <span className="text-green-500 ms-2">In stock</span>
                 </div>
                 <ProductOptions
-                  productId={product_id}
+                  productName={productDetail.name}
                   productOptions={product_options}
                 />
               </div>

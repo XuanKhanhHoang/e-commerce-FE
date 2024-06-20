@@ -2,15 +2,14 @@ import { getServerSession } from "next-auth";
 import React from "react";
 import { options } from "../api/auth/[...nextauth]/options";
 import fetch from "@/utils/fetch";
-import {
-  Order,
-  UserFullDetailAndDeliveringOrder,
-} from "@/components/dto/user.dto";
+import { UserFullDetail } from "@/components/dto/user.dto";
 import formatTime from "@/utils/formatTime";
 import truncateText from "@/utils/truncateText";
 import formatPrice from "@/utils/formatPrice";
 import Link from "next/link";
-import Pagination from "@/components/layout/pagination/pagination";
+import { getWebViewLinkFromWebContentLink } from "@/utils/handleDriveImage";
+import { Order, orderResponse } from "@/components/dto/order.dto";
+import AllOrder from "@/components/customer/allOrder";
 
 export default async function page({
   searchParams,
@@ -20,26 +19,32 @@ export default async function page({
   };
 }) {
   const session = await getServerSession(options);
+  let userDetail: UserFullDetail | undefined = undefined;
+  let orderList: Order[] = [];
+  let orderDeliveringList: Order[] = [];
+  let totalPage = 0;
   let { page } = searchParams;
   if (isNaN(Number(page)) || page == undefined) page = "1";
-  let res = await fetch("/customer/customerDetail", {
-    headers: { Authorization: "Bearer " + session?.user?.access_token },
-  });
-  let data: UserFullDetailAndDeliveringOrder | undefined = undefined;
-  if (res.ok) {
-    data = await res.json();
-  }
-  let orderRes = await fetch("/customer/orderlist?page=" + page, {
-    headers: { Authorization: "Bearer " + session?.user?.access_token },
-  });
-  console.log("/customer/orderlist&page=" + page);
-  let orderList: Order[] = [];
-  let totalPage = 0;
-  if (orderRes.ok) {
-    let result: { totalPage: number; value: Order[] } = await orderRes.json();
-    totalPage = result.totalPage;
-    orderList = result.value;
-  }
+  try {
+    let res = await fetch("/customer/customer_detail", {
+      headers: { Authorization: "Bearer " + session?.user?.access_token },
+    });
+
+    if (res.ok) {
+      userDetail = await res.json();
+    }
+    let orderRes = await fetch("/order/orderlist?page=" + page, {
+      headers: { Authorization: "Bearer " + session?.user?.access_token },
+    });
+
+    if (orderRes.ok) {
+      let result: orderResponse = await orderRes.json();
+      totalPage = result.totalPage;
+      orderList = result.value;
+      orderDeliveringList = orderList.filter((item) => item.status.id == 2);
+    }
+  } catch (e) {}
+
   return (
     <div className="bg-gray-100">
       <div className="max-w-screen-xl mx-auto my-5 p-5">
@@ -54,12 +59,12 @@ export default async function page({
                 />
               </div>
               <img
-                src={data?.avartar || ""}
+                src={getWebViewLinkFromWebContentLink(userDetail?.avartar)}
                 alt=""
                 className="h-[200px] mx-auto"
               />
               <h1 className="text-gray-900 font-bold text-lg leading-8 my-1 text-center">
-                {data?.login_name || ""}
+                {userDetail?.login_name || ""}
               </h1>
             </div>
             <div className="my-4" />
@@ -84,7 +89,10 @@ export default async function page({
                   </svg>
                 </span>
                 <span className="tracking-wide">About</span>
-                <Link href={"/customer/updatedetail"} className="pe-1 !ml-auto">
+                <Link
+                  href={"/customer/update_detail"}
+                  className="pe-1 !ml-auto"
+                >
                   <i className="fa-solid fa-gear"></i>{" "}
                   <span>Cập nhật thông tin</span>
                 </Link>
@@ -93,37 +101,36 @@ export default async function page({
                 <div className="grid md:grid-cols-2 text-sm">
                   <div className="grid grid-cols-2">
                     <div className="px-3 py-2 font-semibold">Tên</div>
-                    <div className="px-3 py-2">{data?.first_name || ""}</div>
+                    <div className="px-3 py-2">
+                      {userDetail?.first_name || ""}
+                    </div>
                   </div>
                   <div className="grid grid-cols-2">
                     <div className="px-3 py-2 font-semibold">Họ</div>
-                    <div className="px-3 py-2">{data?.last_name}</div>
+                    <div className="px-3 py-2">{userDetail?.last_name}</div>
                   </div>
                   <div className="grid grid-cols-2">
                     <div className="px-4 py-2 font-semibold">Giới tính</div>
                     <div className="px-4 py-2">
-                      {data?.gender ? "Nam" : "Nữ"}
+                      {userDetail?.gender ? "Nam" : "Nữ"}
                     </div>
                   </div>
                   <div className="grid grid-cols-2">
                     <div className="px-4 py-2 font-semibold">Số điện thoại</div>
                     <div className="px-4 py-2">
-                      {data?.phone_number || "Chưa có số điện thoại"}
+                      {userDetail?.phone_number || "Chưa có số điện thoại"}
                     </div>
                   </div>
                   <div className="flex">
                     <div className="px-4 py-2 font-semibold">Địa chỉ</div>
-                    <p className="px-4 py-2 text-wrap">{data?.address}</p>
+                    <p className="px-4 py-2 text-wrap">{userDetail?.address}</p>
                   </div>
 
                   <div className="flex">
-                    <div className="px-4 py-2 font-semibold">Email.</div>
+                    <div className="px-4 py-2 font-semibold">Email </div>
                     <div className="px-4 py-2">
-                      <a
-                        className="text-blue-800"
-                        href="mailto:jane@example.com"
-                      >
-                        {data?.email || "Địa chỉ email trống"}
+                      <a className="text-blue-800">
+                        {userDetail?.email || "Địa chỉ email trống"}
                       </a>
                     </div>
                   </div>
@@ -155,8 +162,8 @@ export default async function page({
                   </span>
                 </div>
                 <ul className="list-inside space-y-2">
-                  {data?.orders.length != 0 &&
-                    data?.orders.map((item, index) => {
+                  {orderDeliveringList.length != 0 ? (
+                    orderDeliveringList.map((item) => {
                       return (
                         <li key={item.id}>
                           <Link
@@ -179,7 +186,10 @@ export default async function page({
                           </div>
                         </li>
                       );
-                    })}
+                    })
+                  ) : (
+                    <h5 className="text-center"> Bạn chưa có đơn hàng nào </h5>
+                  )}
                 </ul>
               </div>
               <div>
@@ -202,39 +212,7 @@ export default async function page({
                   </span>
                   <span className="tracking-wide">Lịch sử đơn hàng :</span>
                 </div>
-                <ul className="list-inside space-y-2">
-                  {orderList.length != 0 &&
-                    orderList.map((item, index) => {
-                      return (
-                        <li key={item.id}>
-                          <Link
-                            href={"/customer/order?order_id=" + item.id}
-                            className="text-teal-600"
-                          >
-                            {truncateText(item.name, 30)}
-                          </Link>
-
-                          <div className="text-blue-500 text-sm">
-                            Trạng thái đơn hàng:{" "}
-                            <span className="font-medium text-black">
-                              {item.status.status_name}
-                            </span>
-                          </div>
-                          <div className="text-red-600 text-md">
-                            {formatPrice(item.price)} đ
-                          </div>
-                          <div className="text-gray-500 text-xs">
-                            Thời gian đặt: {formatTime(item.createAt)}
-                          </div>
-                        </li>
-                      );
-                    })}
-                </ul>
-                <Pagination
-                  rootDirection="/customer"
-                  totalPage={totalPage}
-                  scrollTop={false}
-                />
+                <AllOrder orderList={orderList} totalPage={totalPage} />
               </div>
             </div>
           </div>

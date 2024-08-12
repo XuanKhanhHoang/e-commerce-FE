@@ -10,6 +10,9 @@ import Link from "next/link";
 import { getWebViewLinkFromWebContentLink } from "@/utils/handleDriveImage";
 import { Order, orderResponse } from "@/components/dto/order.dto";
 import AllOrder from "@/components/customer/allOrder";
+import CustomFetch from "@/utils/fetch";
+import CustomerInfo from "@/components/customer/customer_info/customerInfor";
+import checkIsValidAddressFormat from "@/utils/checkIsValidGetAddressFormat";
 
 export default async function page({
   searchParams,
@@ -19,29 +22,33 @@ export default async function page({
   };
 }) {
   const session = await getServerSession(options);
-  let userDetail: UserFullDetail | undefined = undefined;
+  let userDetail: UserFullDetail | undefined;
   let orderList: Order[] = [];
   let orderDeliveringList: Order[] = [];
   let totalPage = 0;
   let { page } = searchParams;
   if (isNaN(Number(page)) || page == undefined) page = "1";
   try {
-    let res = await fetch("/customer/customer_detail", {
-      headers: { Authorization: "Bearer " + session?.user?.access_token },
-    });
-
-    if (res.ok) {
-      userDetail = await res.json();
-    }
-    let orderRes = await fetch("/order/orderlist?page=" + page, {
-      headers: { Authorization: "Bearer " + session?.user?.access_token },
-    });
-
+    let [cusRes, orderRes] = await Promise.all([
+      CustomFetch("/customer/customer_detail", {
+        headers: { Authorization: "Bearer " + session?.user?.access_token },
+        cache: "default",
+      }),
+      CustomFetch("/order/orderlist?page=" + page, {
+        headers: { Authorization: "Bearer " + session?.user?.access_token },
+        cache: "default",
+      }),
+    ]);
     if (orderRes.ok) {
       let result: orderResponse = await orderRes.json();
       totalPage = result.totalPage;
       orderList = result.value;
       orderDeliveringList = orderList.filter((item) => item.status.id == 2);
+    }
+    if (cusRes.ok) {
+      userDetail = await cusRes.json();
+      if (!checkIsValidAddressFormat(userDetail?.address || ""))
+        userDetail!.address = ",,";
     }
   } catch (e) {}
 
@@ -97,45 +104,7 @@ export default async function page({
                   <span>Cập nhật thông tin</span>
                 </Link>
               </div>
-              <div className="text-gray-700">
-                <div className="grid md:grid-cols-2 text-sm">
-                  <div className="grid grid-cols-2">
-                    <div className="px-3 py-2 font-semibold">Tên</div>
-                    <div className="px-3 py-2">
-                      {userDetail?.first_name || ""}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <div className="px-3 py-2 font-semibold">Họ</div>
-                    <div className="px-3 py-2">{userDetail?.last_name}</div>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <div className="px-4 py-2 font-semibold">Giới tính</div>
-                    <div className="px-4 py-2">
-                      {userDetail?.gender ? "Nam" : "Nữ"}
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2">
-                    <div className="px-4 py-2 font-semibold">Số điện thoại</div>
-                    <div className="px-4 py-2">
-                      {userDetail?.phone_number || "Chưa có số điện thoại"}
-                    </div>
-                  </div>
-                  <div className="flex">
-                    <div className="px-4 py-2 font-semibold">Địa chỉ</div>
-                    <p className="px-4 py-2 text-wrap">{userDetail?.address}</p>
-                  </div>
-
-                  <div className="flex">
-                    <div className="px-4 py-2 font-semibold">Email </div>
-                    <div className="px-4 py-2">
-                      <a className="text-blue-800">
-                        {userDetail?.email || "Địa chỉ email trống"}
-                      </a>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <CustomerInfo userDetail={userDetail} />
             </div>
             <div className="my-4" />
             <div className="bg-white p-3 shadow-sm rounded-sm">
@@ -170,7 +139,7 @@ export default async function page({
                             href={"/customer/order?order_id=" + item.id}
                             className="text-teal-600"
                           >
-                            {truncateText(item.name, 30)}
+                            {truncateText(item.name || "", 60)}
                           </Link>
                           <div className="text-blue-500 text-sm">
                             Trạng thái đơn hàng:{" "}
@@ -179,7 +148,7 @@ export default async function page({
                             </span>
                           </div>
                           <div className="text-red-600 text-md">
-                            {formatPrice(item.price)} đ
+                            {formatPrice(item.value)} đ
                           </div>
                           <div className="text-gray-500 text-xs">
                             Thời gian đặt: {formatTime(item.createAt)}

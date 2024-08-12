@@ -9,16 +9,8 @@ import ProductOptions from "./product_options";
 export default function ProductDetail({
   productDetail,
 }: {
-  productDetail: product_detail | undefined;
+  productDetail: product_detail;
 }) {
-  if (!productDetail)
-    return (
-      <div>
-        <h3 className="text-center text-3xl mx-auto block">
-          Có lỗi khi tải thông tin sản phẩm
-        </h3>
-      </div>
-    );
   const {
     brand,
     description,

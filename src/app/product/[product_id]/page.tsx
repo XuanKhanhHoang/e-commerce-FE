@@ -18,5 +18,6 @@ export default async function page({
   let productDetail: product_detail | undefined = res.ok
     ? await res.json()
     : undefined;
+  if (productDetail == undefined) return notFound();
   return <ProductInfo productDetail={productDetail} />;
 }

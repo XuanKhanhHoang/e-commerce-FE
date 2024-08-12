@@ -3,6 +3,7 @@ import { useState } from "react";
 import ProductImageCommentImage from "./product_comment_image";
 import formatTime from "@/utils/formatTime";
 import { getWebViewLinkFromWebContentLink } from "@/utils/handleDriveImage";
+import RatingComponents from "@/components/layout/rating/rating";
 
 export default function ProductComment({
   commentsProps,
@@ -63,9 +64,7 @@ export default function ProductComment({
             {rating} <span className="text-base font-semibold">trên 5</span>
           </h3>
           <div className="mx-auto">
-            {[...Array(Math.floor(rating))].map((item, index) => {
-              return <i className="fa fa-star" key={index} />;
-            })}
+            <RatingComponents value={rating} />
           </div>
         </div>
         <div className="flex-wrap items-center hidden md:flex text-black">
@@ -169,16 +168,10 @@ export default function ProductComment({
                           </p>
                         </div>
                         <div className="text- w-full">
-                          {[...Array(Math.floor(item.rating))].map(
-                            (item, index) => {
-                              return (
-                                <i
-                                  className="fa fa-star text-yellow-300"
-                                  key={index}
-                                />
-                              );
-                            }
-                          )}
+                          <RatingComponents
+                            value={item.rating}
+                            classIcon="w-4 h-4"
+                          />
                         </div>
                       </footer>
                       <p className="text-gray-500 dark:text-gray-400">
@@ -201,12 +194,9 @@ export default function ProductComment({
                           Phản hồi từ nhà bán hàng
                         </p>
                         <p className="text-sm ms-6 text-gray-600 dark:text-gray-400">
-                          <time
-                            dateTime="2022-02-12"
-                            title="February 12th, 2022"
-                          >
-                            Feb. 12, 2022
-                          </time>
+                          {item.seller_replyAt
+                            ? formatTime(item.seller_replyAt)
+                            : "Có lỗi xảy ra"}
                         </p>
                       </div>
                     </footer>

@@ -11,9 +11,9 @@ import { getServerSession } from "next-auth";
 import { options } from "./api/auth/[...nextauth]/options";
 import ReduxProvider from "@/redux/Provider";
 import CustomFetch from "@/utils/fetch";
-import { signOut } from "next-auth/react";
 import { userGeneral } from "@/components/dto/user.dto";
-
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 const poppins = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
@@ -26,40 +26,47 @@ export default async function RootLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const headersList = headers();
+  const pathname = headersList.get("x-pathname") || "";
+  const isLogoutPage: boolean = pathname.toLowerCase() == "/auth/logout";
   let session = await getServerSession(options);
   let categoryList: categoryList = [];
   let accessToken = session?.user?.access_token;
   let newData: { access_token: string; value: userGeneral } | undefined;
   let isValidToken = true;
   try {
+    const checkValidAccessToken = async () => {
+      if (accessToken)
+        return await CustomFetch("/auth/refreshinfobyaccesstoken", {
+          method: "POST",
+          headers: {
+            Authorization: "Bearer " + accessToken,
+          },
+          next: { revalidate: 300 },
+          cache: undefined,
+        });
+      return undefined;
+    };
     const [categoryResponse, checkValidTokenResponse] = await Promise.all([
       CustomFetch("/product/categorylist", {
         next: { revalidate: 300 },
         cache: undefined,
       }),
-      async () => {
-        if (accessToken)
-          return await CustomFetch("/auth/refreshinfobyaccesstoken", {
-            method: "POST",
-            headers: {
-              Authorization: "Bearer " + accessToken,
-            },
-            next: { revalidate: 300 },
-            cache: undefined,
-          });
-        return undefined;
-      },
+      checkValidAccessToken(),
     ]);
     if (categoryResponse.ok) categoryList = await categoryResponse.json();
     if (checkValidTokenResponse != undefined)
-      if ((checkValidTokenResponse as unknown as Response).ok)
+      if ((checkValidTokenResponse as unknown as Response).ok) {
         newData = await (checkValidTokenResponse as unknown as Response).json();
-      else isValidToken = true;
+      } else isValidToken = false;
+    else isValidToken = true;
+    console.log(isValidToken);
   } catch (error) {
     isValidToken = false;
     console.log(error);
   }
 
+  if (!isValidToken && !isLogoutPage) return redirect("/auth/logout");
   return (
     <html lang="en">
       <body className={poppins.className + " bg-gray-200"}>

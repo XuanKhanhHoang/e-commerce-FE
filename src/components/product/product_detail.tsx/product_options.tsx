@@ -156,7 +156,7 @@ export default function ProductOptions({
                       defaultChecked={index == 0}
                       onChange={() =>
                         setOrder({
-                          amount: order.amount,
+                          amount: "1",
                           option: productOptions[index],
                           price: productOptions[index].selling_price,
                         })

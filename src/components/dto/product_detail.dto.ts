@@ -30,7 +30,8 @@ type comment = {
     avartar: string;
     first_name: string;
   };
-  seller_reply: string;
+  seller_reply: string | undefined;
+  seller_replyAt: string | undefined;
   createAt: string;
   image: {
     image: string;

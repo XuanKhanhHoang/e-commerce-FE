@@ -1,9 +1,20 @@
+import { options } from "@/app/api/auth/[...nextauth]/options";
 import CreateOrderMain from "@/components/customer/create_order/CreateOrderMain";
-import { notFound } from "next/navigation";
+import { provineList } from "@/components/customer/customer_info/customerInfor";
+import { createOrderItem } from "@/components/dto/order.dto";
+import {
+  CreateOrderProduct,
+  CreateOrderProductAndAmount,
+} from "@/components/dto/product";
+import { UserFullDetail } from "@/components/dto/user.dto";
+import checkIsValidAddressFormat from "@/utils/checkIsValidGetAddressFormat";
+import CustomFetch from "@/utils/fetch";
+import { getServerSession } from "next-auth";
+import { notFound, redirect } from "next/navigation";
 
 import React from "react";
 
-export default function page({
+export default async function page({
   searchParams,
 }: {
   searchParams: {
@@ -12,6 +23,11 @@ export default function page({
   };
 }) {
   let products_option_id, amounts;
+  let session = await getServerSession(options);
+  let user: UserFullDetail | undefined;
+  let orderItems: CreateOrderProductAndAmount[] = [];
+  let provineList: provineList = { results: [] };
+
   try {
     products_option_id =
       searchParams.product_option_id != undefined
@@ -37,6 +53,53 @@ export default function page({
         : undefined;
     if (amounts == undefined || isNaN(amounts[0])) throw Error();
     if (amounts.length != products_option_id.length) throw Error();
+
+    let optionsAmount: number[] = [];
+    let idOrderItems: { option_id: number }[] = [];
+    for (let i = 0; i < products_option_id.length; i++) {
+      idOrderItems.push({
+        option_id: products_option_id[i],
+      });
+      optionsAmount[products_option_id[i]] = amounts[i];
+    }
+    const params = new URLSearchParams();
+    idOrderItems.forEach((item) => {
+      for (const key in item) {
+        params.append("products_option_id", item.option_id.toString());
+      }
+    });
+
+    let [getCustomerRespose, getProductResponse, getProvineListRespose] =
+      await Promise.all([
+        await CustomFetch("/customer/customer_detail", {
+          headers: { Authorization: "Bearer " + session?.user?.access_token },
+        }),
+        CustomFetch(
+          "/product/get_product_option_basic_info_list?" + params.toString()
+        ),
+        fetch("https://vapi.vnappmob.com/api/province/", {
+          cache: "force-cache",
+        }),
+      ]);
+    if (getCustomerRespose.ok) {
+      user = await getCustomerRespose.json();
+      if (!checkIsValidAddressFormat(user?.address || "")) user!.address = ",,";
+    }
+    //  else redirect("/");
+    if (getProductResponse.ok) {
+      let res: {
+        totalPage: number;
+        value: CreateOrderProduct[];
+      } = await getProductResponse.json();
+      // if (res.totalPage == 0) redirect("/");\
+      orderItems = res.value.map((item) => ({
+        ...item,
+        amount: optionsAmount[item.id],
+      }));
+    }
+    if (getProvineListRespose.ok) {
+      provineList = await getProvineListRespose.json();
+    }
   } catch (e) {
     return notFound();
   }
@@ -50,8 +113,10 @@ export default function page({
       </div>
       <div className=" max-w-screen-lg  mx-auto ">
         <CreateOrderMain
-          productsOptionId={products_option_id}
-          amounts={amounts}
+          user={user}
+          ordersItem={orderItems}
+          accessToken={session!.user!.access_token}
+          provineList={provineList}
         />
       </div>
     </>

@@ -24,7 +24,7 @@ export default function AllOrder({
                   href={"/customer/order?order_id=" + item.id}
                   className="text-teal-600"
                 >
-                  {truncateText(item.name, 30)}
+                  {truncateText(item.name || "", 60)}
                 </Link>
 
                 <div className="text-blue-500 text-sm">
@@ -34,7 +34,7 @@ export default function AllOrder({
                   </span>
                 </div>
                 <div className="text-red-600 text-md">
-                  {formatPrice(item.price)} đ
+                  {formatPrice(item.value)} đ
                 </div>
                 <div className="text-gray-500 text-xs">
                   Thời gian đặt: {formatTime(item.createAt)}

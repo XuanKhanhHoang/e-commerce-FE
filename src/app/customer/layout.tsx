@@ -9,7 +9,11 @@ export default async function Layout({
   children: React.ReactNode;
 }) {
   const session = await getServerSession(options);
-  if (!session || session.user?.value.ROLE != customerRole)
+  if (
+    !session ||
+    session.user?.value.ROLE != customerRole ||
+    !session.user.access_token
+  )
     return redirect("/auth/login");
   return <>{children}</>;
 }

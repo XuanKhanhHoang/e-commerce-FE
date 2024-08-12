@@ -28,7 +28,7 @@ export default function ProductImageCommentCarousel({
                   )
                 }
                 alt=""
-                className="w-20 h-20 mx-1"
+                className="w-20 h-20 mx-1 cursor-pointer"
               />
             );
           })}

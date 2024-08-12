@@ -26,11 +26,9 @@ const Header = ({
   const { update } = useSession();
   const updated = useRef(false);
   if (typeof window != "undefined" && !updated.current) {
-    console.log(auth);
+    console.log("auth", auth);
     updated.current = true;
-    if (!auth.isValidToken) {
-      signOut();
-    } else {
+    if (auth.isValidToken) {
       update({ ...sessionProps, value: auth.data });
     }
   }
